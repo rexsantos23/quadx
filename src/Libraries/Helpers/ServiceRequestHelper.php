@@ -2,7 +2,12 @@
 
 namespace Libraries\Helpers;
 
+use GuzzleHttp\Promise\EachPromise;
+use Psr\Http\Message\ResponseInterface;
+use Zend\Diactoros\Response;
+
 use Libraries\Helpers\ServiceResponseHelper;
+
 
 class ServiceRequestHelper {
 
@@ -10,8 +15,8 @@ class ServiceRequestHelper {
     public $httpMethod;
     public $headers;
     public $url;
-    public $res;
     public $client;
+
     public function __construct()
     {
     	$this->client = new \GuzzleHttp\Client;
@@ -20,22 +25,29 @@ class ServiceRequestHelper {
 	public function send()
 	{
 
-        $requestPromise = array();
-        
+        $promises = array();
+        $profiles = arraY();
+
 		foreach ($this->params as $orderId) {
-
-			$requestPromise[$orderId] = $this->client->requestAsync(
-				$this->httpMethod,
-				$this->url.$orderId,
-				array('headers' => $this->headers)
-			);
-
-		
+			$promises[$orderId] = $this->client->requestAsync(
+					$this->httpMethod,
+					$this->url.$orderId,
+					array('headers' => $this->headers)
+				)->then(function (ResponseInterface $response) {
+					return json_decode($response->getBody(), true);
+				});
+					
 		}
 
-		$results = \GuzzleHttp\Promise\settle($requestPromise)->wait();
+        (new EachPromise($promises, [
+            'concurrency' => 4,
+            'fulfilled' => function ($profile) use (&$profiles) {
 
-		return $results;
+                $profiles[] = $profile;
+            },
+        ]))->promise()->wait();
+
+		return $profiles;
 	}
 	
 }

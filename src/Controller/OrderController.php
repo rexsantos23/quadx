@@ -3,7 +3,7 @@
 namespace Controller;
 
 use DebugBar\JavascriptRenderer;
-use GuzzleHttp\Promise\EachPromise;
+use GuzzleHttp\ClientInterface;
 use Zend\Diactoros\Response;
 
 use Libraries\Helpers\ServiceExecutorHelper;
@@ -13,15 +13,12 @@ class OrderController {
 	public $request;
  	private $jsRenderer;
 	public $url = 'https://api.staging.lbcx.ph/v1/orders/';
-	public $orderId = ['0077-6495-AYUX','0077-6491-ASLK','0077-6490-VNCM','0077-6478-DMAR',
-						'0077-1456-TESV','0077-0836-PEFL','0077-0526-EBDW','0077-0522-QAYC',
-						'0077-0516-VBTW','0077-0424-NSHE'];
+	public $orderId = ['0077-6495-AYUX','0077-0424-NSHE'];
 
 	public function __construct(JavascriptRenderer $jsRenderer)
 	{
-
 		$this->request = new ServiceExecutorHelper();
-		$this->jsRenderer = $jsRenderer;
+        $this->jsRenderer = $jsRenderer;
 	}
 
 	public function index()
@@ -35,27 +32,23 @@ class OrderController {
             ];
         $this->request->httpMethod = 'get';
 
-        $promises = $this->request->call($this->url);
-
-        (new EachPromise($promises, [
-            'concurrency' => 4,
-            'fulfilled' => function ($profile) use (&$profiles) {
-                $profiles[] = $profile;
-            },
-        ]))->promise()->wait();
+        $profiles = $this->request->call($this->url);
 
         $response = new Response();
-        var_dump($response);
-        die();
-        return $data;
-		//$promise = $this->request($this->orderId);
+
+        $response->getBody()->write($this->html($profiles));
+
+        return $response
+            ->withHeader('Content-type', 'text/json');
+        
 	}
 
     private function html(array $profiles)
     {
         $head = "<html><head>{$this->jsRenderer->renderHead()}</head>";
         $body = join('', array_map(function (array $profile) {
-            return "<img src='{$profile['avatar_url']}' width='100px'><br>";
+            
+            return $profile['id'];
         }, $profiles));
         $footer = "</html>";
         return $head."<body>".$body."{$this->jsRenderer->render()}</body>".$footer;
