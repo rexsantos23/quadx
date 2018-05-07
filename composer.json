@@ -1,0 +1,21 @@
+{
+    "name": "quadx/exam",
+    "description": "QuadX Exam",
+    "authors": [
+        {
+            "name": "Rex",
+            "email": "santos.rex22@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^6.3",
+        "zendframework/zend-diactoros": "^1.7",
+        "maximebf/debugbar": "1.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Controller\\": "src/Controller",
+            "Libraries\\" : "src/Libraries"
+        }
+    }
+}
