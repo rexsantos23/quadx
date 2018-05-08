@@ -2,23 +2,25 @@
 
 namespace Controller;
 
-use DebugBar\JavascriptRenderer;
-use GuzzleHttp\ClientInterface;
-use Zend\Diactoros\Response;
-
+use Libraries\Helpers\PrintResponseFormat;
 use Libraries\Helpers\ServiceExecutorHelper;
+
+use Libraries\Traits\Sorter;
 
 class OrderController {
 
-	public $request;
- 	private $jsRenderer;
-	public $url = 'https://api.staging.lbcx.ph/v1/orders/';
-	public $orderId = ['0077-6495-AYUX','0077-0424-NSHE'];
+    use Sorter;
 
-	public function __construct(JavascriptRenderer $jsRenderer)
+	private $request;
+	private $url = 'https://api.staging.lbcx.ph/v1/orders/';
+	private $orderId = ['0077-6495-AYUX','0077-0424-NSHE','0077-6491-ASLK'];
+    private $response;    
+    private $arrayKey = ['tat'];
+
+	public function __construct()
 	{
 		$this->request = new ServiceExecutorHelper();
-        $this->jsRenderer = $jsRenderer;
+        $this->response = new PrintResponseFormat();
 	}
 
 	public function index()
@@ -34,23 +36,16 @@ class OrderController {
 
         $profiles = $this->request->call($this->url);
 
-        $response = new Response();
+        usort($profiles, $this->sort('created_at'));
 
-        $response->getBody()->write($this->html($profiles));
-
-        return $response
-            ->withHeader('Content-type', 'text/json');
+        for($i = 0; $i < count($profiles); $i++)
+        {
+            var_dump($profiles[$i]['tracking_number'],$profiles[$i]['created_at']);
+        }
+        //var_dump(count($profiles));
+        //$this->response->format($profiles);
         
 	}
 
-    private function html(array $profiles)
-    {
-        $head = "<html><head>{$this->jsRenderer->renderHead()}</head>";
-        $body = join('', array_map(function (array $profile) {
-            
-            return $profile['id'];
-        }, $profiles));
-        $footer = "</html>";
-        return $head."<body>".$body."{$this->jsRenderer->render()}</body>".$footer;
-    }	
+	
 }
