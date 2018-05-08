@@ -39,6 +39,7 @@ class ServiceRequestHelper {
 					
 		}
 
+
         (new EachPromise($promises, [
             'concurrency' => 4,
             'fulfilled' => function ($profile) use (&$profiles) {
@@ -48,6 +49,7 @@ class ServiceRequestHelper {
         ]))->promise()->wait();
 
 		return $profiles;
+
 	}
 	
 }

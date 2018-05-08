@@ -2,7 +2,9 @@
 
 namespace Controller;
 
-use Libraries\Helpers\PrintResponseFormat;
+
+use DebugBar\JavascriptRenderer;
+use Libraries\Helpers\OrderResponse;
 use Libraries\Helpers\ServiceExecutorHelper;
 
 use Libraries\Traits\Sorter;
@@ -13,14 +15,16 @@ class OrderController {
 
 	private $request;
 	private $url = 'https://api.staging.lbcx.ph/v1/orders/';
-	private $orderId = ['0077-6495-AYUX','0077-0424-NSHE','0077-6491-ASLK'];
-    private $response;    
-    private $arrayKey = ['tat'];
+    public $orderId = ['0077-6495-AYUX','0077-6491-ASLK','0077-6490-VNCM','0077-6478-DMAR',
+                        '0077-1456-TESV','0077-0836-PEFL','0077-0526-EBDW','0077-0522-QAYC',
+                        '0077-0516-VBTW','0077-0424-NSHE'];
+    private $response;
 
 	public function __construct()
 	{
 		$this->request = new ServiceExecutorHelper();
-        $this->response = new PrintResponseFormat();
+        $this->response = new OrderResponse();
+
 	}
 
 	public function index()
@@ -34,18 +38,57 @@ class OrderController {
             ];
         $this->request->httpMethod = 'get';
 
-        $profiles = $this->request->call($this->url);
+        $orders = $this->request->call($this->url);
 
-        usort($profiles, $this->sort('created_at'));
-
-        for($i = 0; $i < count($profiles); $i++)
+        usort($orders, $this->sort('created_at'));
+        $arr = [];
+        $total = 0;
+        $sales = 0;
+        for($i = 0; $i < count($orders); $i++)
         {
-            var_dump($profiles[$i]['tracking_number'],$profiles[$i]['created_at']);
+            $arr[$i]['tracking_number'] = $orders[$i]['tracking_number'];
+            $arr[$i]['status'] = $orders[$i]['status'];
+
+            foreach ($orders[$i]['tat'] as $key => $value) {
+                $tat[$key] = $value['date'];
+            }
+
+            asort($tat);
+
+            $arr[$i]['history'] = $tat;
+            
+            $arr[$i]['breakdown'] = array(
+                                        'subtotal' => $orders[$i]['subtotal'],
+                                        'shipping' => $orders[$i]['shipping'],
+                                        'tax' => $orders[$i]['tax'],
+                                        'fee' => $orders[$i]['fee'],
+                                        'insurance' => $orders[$i]['insurance'],
+                                        'discount' =>$orders[$i]['discount'],
+                                        'total' => $orders[$i]['total']
+                                    );
+
+            $arr[$i]['fees'] = array(
+                                    'shipping_fee' => $orders[$i]['shipping_fee'],
+                                    'insurance_fee' => $orders[$i]['insurance_fee'],
+                                    'transaction_fee' => $orders[$i]['transaction_fee'],
+                                );               
+            
+
+            $total += ($orders[$i]['total']);
+            $sales += ($orders[$i]['shipping_fee'] + $orders[$i]['insurance_fee'] + $orders[$i]['transaction_fee']);    
+
+            
         }
-        //var_dump(count($profiles));
-        //$this->response->format($profiles);
-        
+        $arr['total'] = $total;
+        $arr['sales'] = $sales;
+
+        $resp = $this->response->format($arr);
+
+        return $resp;
+
 	}
 
-	
+  
+
+
 }

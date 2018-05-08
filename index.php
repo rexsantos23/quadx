@@ -19,10 +19,11 @@ $handler = GuzzleHttp\HandlerStack::create();
 
 $handler->unshift($middleware);*/
 
-$controller = new Controller\OrderController();
+$controller = new Controller\OrderController($debug->getJavascriptRenderer());
 
 $response = $controller->index();
 
+print($response);
 //(new Zend\Diactoros\Response\SapiEmitter())->emit($response);
 
 ?>
