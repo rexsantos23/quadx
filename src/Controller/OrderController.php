@@ -2,26 +2,25 @@
 
 namespace Controller;
 
-use DebugBar\JavascriptRenderer;
-use GuzzleHttp\Promise\EachPromise;
-use Zend\Diactoros\Response;
-
+use Libraries\Helpers\PrintResponseFormat;
 use Libraries\Helpers\ServiceExecutorHelper;
+
+use Libraries\Traits\Sorter;
 
 class OrderController {
 
-	public $request;
- 	private $jsRenderer;
-	public $url = 'https://api.staging.lbcx.ph/v1/orders/';
-	public $orderId = ['0077-6495-AYUX','0077-6491-ASLK','0077-6490-VNCM','0077-6478-DMAR',
-						'0077-1456-TESV','0077-0836-PEFL','0077-0526-EBDW','0077-0522-QAYC',
-						'0077-0516-VBTW','0077-0424-NSHE'];
+    use Sorter;
 
-	public function __construct(JavascriptRenderer $jsRenderer)
+	private $request;
+	private $url = 'https://api.staging.lbcx.ph/v1/orders/';
+	private $orderId = ['0077-6495-AYUX','0077-0424-NSHE','0077-6491-ASLK'];
+    private $response;    
+    private $arrayKey = ['tat'];
+
+	public function __construct()
 	{
-
 		$this->request = new ServiceExecutorHelper();
-		$this->jsRenderer = $jsRenderer;
+        $this->response = new PrintResponseFormat();
 	}
 
 	public function index()
@@ -35,29 +34,18 @@ class OrderController {
             ];
         $this->request->httpMethod = 'get';
 
-        $promises = $this->request->call($this->url);
+        $profiles = $this->request->call($this->url);
 
-        (new EachPromise($promises, [
-            'concurrency' => 4,
-            'fulfilled' => function ($profile) use (&$profiles) {
-                $profiles[] = $profile;
-            },
-        ]))->promise()->wait();
+        usort($profiles, $this->sort('created_at'));
 
-        $response = new Response();
-        var_dump($response);
-        die();
-        return $data;
-		//$promise = $this->request($this->orderId);
+        for($i = 0; $i < count($profiles); $i++)
+        {
+            var_dump($profiles[$i]['tracking_number'],$profiles[$i]['created_at']);
+        }
+        //var_dump(count($profiles));
+        //$this->response->format($profiles);
+        
 	}
 
-    private function html(array $profiles)
-    {
-        $head = "<html><head>{$this->jsRenderer->renderHead()}</head>";
-        $body = join('', array_map(function (array $profile) {
-            return "<img src='{$profile['avatar_url']}' width='100px'><br>";
-        }, $profiles));
-        $footer = "</html>";
-        return $head."<body>".$body."{$this->jsRenderer->render()}</body>".$footer;
-    }	
+	
 }

@@ -19,10 +19,7 @@ $handler = GuzzleHttp\HandlerStack::create();
 
 $handler->unshift($middleware);*/
 
-$controller = new Controller\OrderController(
-	new GuzzleHttp\Client(compact('handler')),
-	$debug->getJavascriptRenderer()
-);
+$controller = new Controller\OrderController();
 
 $response = $controller->index();
 
